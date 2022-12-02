@@ -23,7 +23,7 @@ const initialPrompt = () => {
           'Add a department', 
           'Add a role', 
           'Add an employee', 
-          "Update an employee's role", 
+          "Update an employees role", 
           'EXIT'
         ]
     }).then(answer => {
@@ -89,7 +89,7 @@ const displayRoles = () => {
     });
 };
 
-const viewEmployees = () => {
+const displayEmployees = () => {
     const sql = `SELECT employee.*, role.title, role.salary, department.name AS department
                  FROM employee
                  LEFT JOIN role ON employee.role_id = role.id
@@ -144,6 +144,7 @@ const addDepartmentQuery = answer => {
     db.query(sql, params, (err, result) => {
         if (err) throw err;
         console.log('\nDepartment added successfully\n');
+        initialPrompt();
     });
 };
 
@@ -170,7 +171,7 @@ const rolePrompts = (arr) => {
     return inquirer.prompt([
         {
             type: 'text',
-            name: 'newRole',
+            name: 'roleTitle',
             message: 'Input a new role:',
             validate: input => {
               if (input) {
@@ -183,7 +184,7 @@ const rolePrompts = (arr) => {
           },
           {
             type: 'number',
-            name: 'newRoleSalary',
+            name: 'roleSalary',
             message: "What is this role's salary:",
             validate: input => {
               if (input) {
@@ -201,4 +202,139 @@ const rolePrompts = (arr) => {
             choices: arr
           }
     ]);
+};
+
+const addRoleQuery = (answers, id) => {
+    const sql = `INSERT INTO role (title, salary, department_id) VALUES (?,?,?)`;
+    const params = [answers.roleTitle, answers.roleSalary, id];
+
+    db.query(sql, params, (err, data) => {
+        if (err) throw err;
+        console.log('\nRole added successfully');
+        initialPrompt();
+    });
+};
+
+const addEmployee = () => {
+    let roleArr = [];
+    getRoles()
+    .then(data => {
+        data.forEach(object => {
+            roleArr.push(object.title);
+        });
+        employeePrompts(roleArr)
+        .then(answers => {
+            const index = roleArr.indexOf(answers.roleTitle);
+            const id = data[index].id;
+            addEmployeeQuery(answers,id);
+        });
+    })
+    .catch(err => console.log(err));
+}
+
+const employeePrompts = (arr) => {
+    return inquirer.prompt([
+        {
+            type: 'text',
+            name: 'firstName',
+            message: 'Input a new first name:',
+            validate: input => {
+              if (input) {
+                return true;
+              } else {
+                console.log('Invalid first name');
+                return false;
+              }
+            }
+          },
+          {
+            type: 'text',
+            name: 'lastName',
+            message: 'Input a new last name:',
+            validate: input => {
+              if (input) {
+                return true;
+              } else {
+                console.log('Invalid last name');
+                return false;
+              }
+            }
+          },
+          {
+            type: 'list',
+            name: 'roleTitle',
+            message: 'Pick a role:',
+            choices: arr
+          }
+    ]);
+};
+
+const addEmployeeQuery = (answers,id) => {
+    const sql = `INSERT INTO employee (first_name, last_name, role_id) VALUES (?,?,?)`;
+    const params = [answers.firstName, answers.lastName, id];
+
+    db.query(sql, params, (err, result) => {
+        if (err) throw err;
+        console.log('\nSuccessfully added new employee');
+        initialPrompt();
+    });
+};
+
+const updateEmployee = () => {
+    console.log('works at least');
+    let employeeArr = [];
+    let roleArr = [];
+  
+    getEmployees()
+      .then(eData => {
+        eData.forEach(object => {
+          const fullName = object.first_name + ' ' + object.last_name;
+          employeeArr.push(fullName);
+        });
+        getRoles()
+          .then(rData => {
+            rData.forEach(object => {
+              roleArr.push(object.title);
+            });
+            updatePrompts(employeeArr, roleArr)
+              .then(answers => {
+                const eIndex = employeeArr.indexOf(answers.chooseEmployee);
+                const rIndex = roleArr.indexOf(answers.chooseRole);
+                const employeeId = eData[eIndex].id;
+                const roleId = rData[rIndex].id;
+                updateEmployeeQuery(roleId, employeeId);
+              });
+          });
+      })
+      .catch(err => console.log(err));
+  };
+  
+  const updatePrompts = (employeeArr, roleArr) => {
+    return inquirer
+      .prompt([
+        {
+          type: 'list',
+          name: 'chooseEmployee',
+          message: 'Pick an employee:',
+          choices: employeeArr
+        },
+        {
+          type: 'list',
+          name: 'chooseRole',
+          message: "Pick employee's new role:",
+          choices: roleArr
+        }
+      ]);
+  };
+  
+
+const updateEmployeeQuery = (roleId, employeeId) => {
+    const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
+    const params = [roleId, employeeId];
+
+    db.query(sql, params, (err, result) => {
+        if (err) throw err;
+        console.log('\nRole successfully updated\n');
+        initialPrompt();
+    });
 };
