@@ -12,4 +12,4 @@ This is a command line program using MySQL to build and edit a database. The dat
 * mySQL
 
 ## Video Demonstration Link
-[Click here to watch the demonstration videp] (https://drive.google.com/file/d/1TMMOS-ejY9b-m6GRWzM5wXcpQxq1nEZ1/view)
+[Click here to watch the demonstration video](https://drive.google.com/file/d/1TMMOS-ejY9b-m6GRWzM5wXcpQxq1nEZ1/view)
