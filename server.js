@@ -90,5 +90,115 @@ const displayRoles = () => {
 };
 
 const viewEmployees = () => {
-    const sql = `SELECT employee.*, role.title, role.salary, department.name AS department`
-}
+    const sql = `SELECT employee.*, role.title, role.salary, department.name AS department
+                 FROM employee
+                 LEFT JOIN role ON employee.role_id = role.id
+                 LEFT JOIN department ON role.department_id = department.id`;
+
+    db.query(sql, (err, data) => {
+        let sortedData = [];
+        if (err) throw err;
+
+        data.forEach(employee => {
+            const obj = {
+                id: employee.id,
+                first_name: employee.first_name,
+                last_name: employee.last_name,
+                title: employee.title,
+                salary: employee.salary,
+                department: employee.department
+            };
+            sortedData.push(obj);
+        });
+        console.table('\nEmployees', sortedData);
+        initialPrompt();
+    });                 
+};
+
+const addDepartment = () => {
+    inquirer.prompt({
+        type: 'text',
+        name: 'departmentName',
+        message: 'Enter a new department name:',
+        validate: input => {
+          if (input) {
+            return true;
+          } else {
+            console.log('Invalid department name');
+            return false;
+          }
+        }
+      })
+      .then(answer => {
+        addDepartmentQuery(answer);
+      })
+      .catch(err => {
+        console.log(err);
+    })
+};
+
+const addDepartmentQuery = answer => {
+    const sql = `INSERT INTO department (name) VALUES (?)`;
+    const params = [answer.departmentName];
+
+    db.query(sql, params, (err, result) => {
+        if (err) throw err;
+        console.log('\nDepartment added successfully\n');
+    });
+};
+
+const addRole = () => {
+    let departmentArr = [];
+    getDepartments()
+    .then(data => {
+        data.forEach(object => {
+            departmentArr.push(object.name);
+        });
+        rolePrompts(departmentArr)
+            .then(answers => {
+                const index = departmentArr.indexOf(answers.departmentName);
+                const id = data[index].id;
+                addRoleQuery(answers, id);
+            })
+        })
+        .catch(err => {
+            console.log(err);
+        });
+};
+
+const rolePrompts = (arr) => {
+    return inquirer.prompt([
+        {
+            type: 'text',
+            name: 'newRole',
+            message: 'Input a new role:',
+            validate: input => {
+              if (input) {
+                return true;
+              } else {
+                console.log('Invalid role');
+                return false;
+              }
+            }
+          },
+          {
+            type: 'number',
+            name: 'newRoleSalary',
+            message: "What is this role's salary:",
+            validate: input => {
+              if (input) {
+                return true;
+              } else {
+                console.log('Please enter in a salary amount!');
+                return false;
+              }
+            }
+          },
+          {
+            type: 'list',
+            name: 'departmentName',
+            message: 'What department is this role in:',
+            choices: arr
+          }
+    ]);
+};
